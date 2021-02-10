@@ -40,8 +40,10 @@ class Table<Value extends object> {
 	}
 
 	create(value: Value): EntryExists<Value> {
-		const key = this.createKey();
+		return this.set(this.createKey(), value);
+	}
 
+	set(key: Key, value: Value): EntryExists<Value> {
 		this.values.set(key, value);
 
 		return { key, value, exists: true };
