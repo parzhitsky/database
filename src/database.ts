@@ -5,25 +5,25 @@ interface EntryBase {
 	exists: boolean;
 }
 
-interface Entry<Value> extends EntryBase {
+interface Entry<Value extends object> extends EntryBase {
 	value?: Value;
 }
 
-interface EntryExists<Value> extends Entry<Value> {
+interface EntryExists<Value extends object> extends Entry<Value> {
 	value: Value; // override
 	exists: true;
 }
 
-interface Thunk<Value> {
+interface Thunk<Value extends object> {
 	(existing?: Value): /* updated */ Value;
 }
 
-interface UpdateResult<Value> extends EntryBase {
+interface UpdateResult<Value extends object> extends EntryBase {
 	oldValue?: Value;
 	newValue: Value;
 }
 
-interface DeleteResult<Value> extends Entry<Value> {
+interface DeleteResult<Value extends object> extends Entry<Value> {
 	deleted: boolean;
 }
 
