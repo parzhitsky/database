@@ -32,7 +32,7 @@ interface DeleteResult<Value> extends WithKey, WithOldValue<Value>, WithExisted 
 }
 
 interface Thunk<Value extends object> {
-	(existing?: Value): /* updated */ Value | /* omitted */ void | undefined;
+	(existing?: Readonly<Value>): /* updated */ Value | /* omitted */ void | undefined;
 }
 
 /** @internal */
