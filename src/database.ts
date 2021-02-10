@@ -27,6 +27,7 @@ interface DeleteResult<Value> extends Entry<Value> {
 	deleted: boolean;
 }
 
+/** @internal */
 class Table<Value extends object> {
 	protected readonly values = new Map<Key, Value>();
 
