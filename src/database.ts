@@ -1,30 +1,38 @@
 type Key = symbol & { __type__: "Key" };
 
-interface EntryBase {
-	key: Key;
+type WithKey = { key: Key };
+type WithOldValue<Value> = { oldValue?: Value };
+type WithNewValue<Value> = { newValue: Value };
+type WithExisted<Existed extends boolean = boolean> = { existed: Existed }; // type arg is not 'Value' to avoid confusion
+
+interface ReadResult<Value> extends WithKey {
+	value?: Value;
 	exists: boolean;
 }
 
-interface Entry<Value extends object> extends EntryBase {
-	value?: Value;
-}
-
-interface EntryExists<Value extends object> extends Entry<Value> {
-	value: Value; // override
+interface ReadAllResult<Value> extends WithKey {
+	value: Value;
 	exists: true;
 }
 
-interface Thunk<Value extends object> {
-	(existing?: Value): /* updated */ Value;
+interface CreateResult<Value> extends WithKey, WithExisted<false>, WithNewValue<Value> {
+	created: true;
 }
 
-interface UpdateResult<Value extends object> extends EntryBase {
-	oldValue?: Value;
-	newValue: Value;
+interface SetResult<Value> extends WithKey, WithOldValue<Value>, WithNewValue<Value>, WithExisted {
+	didSet: true;
 }
 
-interface DeleteResult<Value extends object> extends Entry<Value> {
+interface UpdateResult<Value> extends WithKey, WithOldValue<Value>, Partial<WithNewValue<Value>>, WithExisted {
+	updated: boolean;
+}
+
+interface DeleteResult<Value> extends WithKey, WithOldValue<Value>, WithExisted {
 	deleted: boolean;
+}
+
+interface Thunk<Value extends object> {
+	(existing?: Value): /* updated */ Value | /* omitted */ void | undefined;
 }
 
 /** @internal */
@@ -39,17 +47,23 @@ class Table<Value extends object> {
 		return Symbol(Math.random().toString().slice(2)) as Key;
 	}
 
-	create(value: Value): EntryExists<Value> {
-		return this.set(this.createKey(), value);
+	create(newValue: Value): CreateResult<Value> {
+		const key = this.createKey();
+
+		this.values.set(key, newValue);
+
+		return { key, newValue, existed: false, created: true };
 	}
 
-	set(key: Key, value: Value): EntryExists<Value> {
-		this.values.set(key, value);
+	set(key: Key, newValue: Value): SetResult<Value> {
+		const { exists: existed, value: oldValue } = this.read(key);
 
-		return { key, value, exists: true };
+		this.values.set(key, newValue);
+
+		return { key, oldValue, newValue, existed, didSet: true };
 	}
 
-	read(key: Key): Entry<Value> {
+	read(key: Key): ReadResult<Value> {
 		return {
 			key,
 			value: this.values.get(key),
@@ -57,29 +71,32 @@ class Table<Value extends object> {
 		};
 	}
 
-	*readAll(): IterableIterator<EntryExists<Value>> {
+	*readAll(): IterableIterator<ReadAllResult<Value>> {
 		for (const [ key, value ] of this.values.entries())
 			yield { key, value, exists: true };
 	}
 
 	update(key: Key, thunk: Thunk<Value>): UpdateResult<Value> {
-		const exists = this.values.has(key);
+		const { exists: existed, value: oldValue } = this.read(key);
+		const thunkResult = thunk(oldValue);
 
-		if (exists) {
-			const oldValue = this.values.get(key)!;
-			const newValue = thunk(oldValue);
+		let updated = false; // by default
+		let newValue: Value | undefined;
 
-			return { key, exists, oldValue, newValue };
+		if (thunkResult != null) {
+			updated = true;
+			this.set(key, newValue = thunkResult);
 		}
 
-		return { key, exists, newValue: thunk() };
+		return { key, oldValue, newValue, existed, updated };
 	}
 
 	delete(key: Key): DeleteResult<Value> {
-		return {
-			...this.read(key),
-			deleted: this.values.delete(key),
-		};
+		const { exists: existed, value: oldValue } = this.read(key);
+
+		const deleted = existed;
+
+		return { key, oldValue, existed, deleted };
 	}
 }
 
