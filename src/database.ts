@@ -94,9 +94,7 @@ class Table<Value extends object> {
 	delete(key: Key): DeleteResult<Value> {
 		const { exists: existed, value: oldValue } = this.read(key);
 
-		const deleted = existed;
-
-		return { key, oldValue, existed, deleted };
+		return { key, oldValue, existed, deleted: this.values.delete(key) };
 	}
 }
 
