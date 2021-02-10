@@ -9,29 +9,30 @@ interface Person {
 const db = new Database();
 const table = db.createTable<Person>("Person");
 
-const { key: johnKey } = table.create({
+const create = table.create({
 	name: "John",
 	age: 42,
 });
 
-table.update(johnKey, (john) => {
+const update = table.update(create.key, (john) => {
 	if (john == null)
 		throw new Error("Expected to see existing entry");
 
 	return { ...john, age: john.age + 1 };
 });
 
-{
-	const entry = table.read(johnKey);
+if (!update.updated)
+	throw new Error("Expected entry to be updated");
 
-	if (!entry.exists)
-		throw new Error("Expected to see existing entry");
+const entry = table.read(create.key);
 
-	else
-		assert.strictEqual(entry.value!.age, 43, "John's age should have been equal to 43");
-}
+if (!entry.exists)
+	throw new Error("Expected to see existing entry");
 
-table.delete(johnKey);
+else
+	assert.strictEqual(entry.value!.age, 43, "John's age should have been equal to 43");
 
-if (table.read(johnKey).exists)
+const deleted = table.delete(create.key);
+
+if (table.read(deleted.key).exists)
 	throw new Error("Expected entry to be deleted");
