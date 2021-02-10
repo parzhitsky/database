@@ -1,4 +1,4 @@
-type Key = symbol;
+type Key = symbol & { __type__: "Key" };
 
 interface EntryBase {
 	key: Key;
@@ -36,7 +36,7 @@ class Table<Value extends object> {
 	) {}
 
 	protected createKey(): Key {
-		return Symbol(Math.random().toString().slice(2));
+		return Symbol(Math.random().toString().slice(2)) as Key;
 	}
 
 	create(value: Value): EntryExists<Value> {
