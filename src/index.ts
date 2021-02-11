@@ -36,3 +36,19 @@ const deleted = table.delete(create.key);
 
 if (table.read(deleted.key).exists)
 	throw new Error("Expected entry to be deleted");
+
+const alice = table.create({
+	name: "Alice",
+	age: 17,
+});
+
+const fakeAliceKeys = [
+	Symbol(alice.key.description),
+	Symbol(alice.key.description) as (symbol & { readonly __type__: unique symbol }),
+] as const;
+
+// @ts-expect-error
+table.read(fakeAliceKeys[0]);
+
+// @ts-expect-error
+table.read(fakeAliceKeys[1]);

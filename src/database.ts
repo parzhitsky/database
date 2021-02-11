@@ -1,4 +1,6 @@
-type Key = symbol & { __type__: "Key" };
+type Key = symbol & {
+	readonly __type__: unique symbol;
+};
 
 type WithKey = { key: Key };
 type WithOldValue<Value> = { oldValue?: Value };
